@@ -234,10 +234,9 @@ let aiNotes = "";
 function resetAi() {
   $("ai-desc").value = "";
   $("ai-weight").value = "";
-  $("ai-photo").value = "";
   aiPhoto = null;
   $("ai-preview").hidden = true;
-  $("ai-photo-label").textContent = "📷 Add photo (optional)";
+  $("ai-camera-label").textContent = "📷 Take photo";
   showAiStep("input");
 }
 
@@ -258,17 +257,20 @@ $("open-ai").onclick = () => {
   if (!settings.apiKey) aiError("Add your Anthropic API key in Settings first.");
 };
 
-$("ai-photo").onchange = () => {
-  aiPhoto = $("ai-photo").files[0] ?? null;
+// Two inputs: "ai-camera" opens the camera directly (capture attribute), "ai-photo" opens the gallery.
+function onPhotoPicked(e) {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  aiPhoto = file;
   const img = $("ai-preview");
-  if (aiPhoto) {
-    img.src = URL.createObjectURL(aiPhoto);
-    img.hidden = false;
-    $("ai-photo-label").textContent = "Change photo";
-  } else {
-    img.hidden = true;
-  }
-};
+  if (img.src) URL.revokeObjectURL(img.src);
+  img.src = URL.createObjectURL(aiPhoto);
+  img.hidden = false;
+  $("ai-camera-label").textContent = "📷 Retake";
+}
+$("ai-camera").onchange = onPhotoPicked;
+$("ai-photo").onchange = onPhotoPicked;
 
 $("ai-go").onclick = async () => {
   const description = $("ai-desc").value.trim();
