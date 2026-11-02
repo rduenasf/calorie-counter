@@ -282,6 +282,11 @@ $("ai-go").onclick = async () => {
   btn.disabled = true;
   btn.textContent = "Estimating…";
   $("ai-error").hidden = true;
+  // Show elapsed seconds so a slow call is visibly still working.
+  const started = Date.now();
+  const ticker = setInterval(() => {
+    btn.textContent = `Estimating… ${Math.round((Date.now() - started) / 1000)}s`;
+  }, 1000);
   try {
     const imageBase64 = aiPhoto ? (await prepareImage(aiPhoto)).base64 : null;
     const result = await estimateCalories({ apiKey: settings.apiKey, description, weight, imageBase64 });
@@ -293,6 +298,7 @@ $("ai-go").onclick = async () => {
   } catch (err) {
     aiError(err.message || String(err));
   } finally {
+    clearInterval(ticker);
     btn.disabled = false;
     btn.textContent = "Estimate calories";
   }
