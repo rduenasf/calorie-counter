@@ -176,7 +176,7 @@ dialog.sheet[open] { animation: up 0.18s ease-out; }
 .keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .k {
   border: 0; border-radius: 12px; background: var(--surface-2);
-  font-size: 1.35rem; font-weight: 600; padding: 14px 0; cursor: pointer;
+  font-size: 1.35rem; font-weight: 600; padding: 22px 0; cursor: pointer;
 }
 .k:active { filter: brightness(0.88); }
 .k.op { background: color-mix(in srgb, var(--primary) 18%, var(--surface-2)); color: var(--primary); }
