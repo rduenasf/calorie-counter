@@ -42,9 +42,12 @@ body {
   min-height: 100dvh;
   padding: env(safe-area-inset-top) 0 calc(150px + env(safe-area-inset-bottom));
   -webkit-tap-highlight-color: transparent;
+  /* App-like: taps and long presses don't select text; fields stay selectable. */
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 
 button, input, textarea { font: inherit; color: inherit; }
+input, textarea { user-select: text; -webkit-user-select: text; }
 button { touch-action: manipulation; }
 
 .visually-hidden {
