@@ -49,6 +49,11 @@ function escapeHtml(s) {
 
 const fmt = (n) => Math.round(n).toLocaleString();
 
+const fmtTime = (ms) => {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+
 async function render() {
   const day = await getDay(currentDate);
   $("date-label").textContent = labelFor(currentDate);
@@ -74,7 +79,7 @@ async function render() {
         ${e.thumb ? `<img class="thumb" src="${e.thumb}" alt="" />` : `<span class="thumb ph">${e.source === "ai" ? "✦" : "🍽"}</span>`}
         <div class="entry-main">
           <div class="entry-name">${escapeHtml(e.name || "Food")}</div>
-          ${e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : ""}
+          <div class="entry-note">${[e.createdAt ? `<span class="entry-time">${fmtTime(e.createdAt)}</span>` : "", escapeHtml(e.note)].filter(Boolean).join(" · ")}</div>
         </div>
         <div class="entry-kcal">${fmt(e.kcal)}</div>
       </li>`
