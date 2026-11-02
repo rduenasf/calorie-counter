@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1f8a5b" />
+    <meta name="description" content="Simple daily calorie log" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="stylesheet" href="./src/style.css" />
+    <title>Calorie Log</title>
+  </head>
+  <body>
+    <header class="top">
+      <div class="date-nav">
+        <button class="icon-btn" id="prev-day" aria-label="Previous day">‹</button>
+        <button class="date-label" id="date-label" aria-label="Pick a date"></button>
+        <input type="date" id="date-picker" class="visually-hidden" tabindex="-1" />
+        <button class="icon-btn" id="next-day" aria-label="Next day">›</button>
+      </div>
+      <button class="icon-btn" id="open-settings" aria-label="Settings">⚙</button>
+    </header>
+
+    <section class="summary">
+      <div class="total"><span id="total">0</span><small> kcal</small></div>
+      <div class="goal" id="goal-wrap" hidden>
+        <div class="bar"><div class="fill" id="goal-fill"></div></div>
+        <div class="goal-text" id="goal-text"></div>
+      </div>
+    </section>
+
+    <main>
+      <ul class="entries" id="entries"></ul>
+      <p class="empty" id="empty">Nothing logged for this day yet.</p>
+    </main>
+
+    <nav class="actions">
+      <button class="btn primary" id="open-calc">＋ Add food</button>
+      <button class="btn accent" id="open-ai">✦ Ask AI</button>
+    </nav>
+
+    <!-- Calculator: add or edit an entry -->
+    <dialog id="calc-sheet" class="sheet">
+      <form method="dialog" class="sheet-body" id="calc-form">
+        <div class="sheet-head">
+          <h2 id="calc-title">Add food</h2>
+          <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+        </div>
+        <input id="calc-name" class="field" placeholder="What did you eat?" autocomplete="off" />
+        <div class="display">
+          <div class="expr" id="calc-expr">&nbsp;</div>
+          <div class="result" id="calc-result">0</div>
+        </div>
+        <div class="keypad" id="keypad">
+          <button type="button" data-key="C" class="k fn">C</button>
+          <button type="button" data-key="(" class="k fn">(</button>
+          <button type="button" data-key=")" class="k fn">)</button>
+          <button type="button" data-key="÷" class="k op">÷</button>
+          <button type="button" data-key="7" class="k">7</button>
+          <button type="button" data-key="8" class="k">8</button>
+          <button type="button" data-key="9" class="k">9</button>
+          <button type="button" data-key="×" class="k op">×</button>
+          <button type="button" data-key="4" class="k">4</button>
+          <button type="button" data-key="5" class="k">5</button>
+          <button type="button" data-key="6" class="k">6</button>
+          <button type="button" data-key="−" class="k op">−</button>
+          <button type="button" data-key="1" class="k">1</button>
+          <button type="button" data-key="2" class="k">2</button>
+          <button type="button" data-key="3" class="k">3</button>
+          <button type="button" data-key="+" class="k op">+</button>
+          <button type="button" data-key="0" class="k">0</button>
+          <button type="button" data-key="." class="k">.</button>
+          <button type="button" data-key="back" class="k fn" aria-label="Backspace">⌫</button>
+          <button type="button" data-key="=" class="k op">=</button>
+        </div>
+        <div class="row">
+          <button type="button" class="btn danger" id="calc-delete" hidden>Delete</button>
+          <button type="submit" class="btn primary grow" id="calc-save">Add</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- AI estimate -->
+    <dialog id="ai-sheet" class="sheet">
+      <form method="dialog" class="sheet-body" id="ai-form">
+        <div class="sheet-head">
+          <h2>Ask AI for calories</h2>
+          <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+        </div>
+        <div id="ai-input">
+          <textarea id="ai-desc" class="field" rows="2" placeholder="Short description, e.g. chicken burrito with guac"></textarea>
+          <input id="ai-weight" class="field" placeholder="Weight (optional), e.g. 350 g" autocomplete="off" />
+          <label class="photo-pick">
+            <input type="file" id="ai-photo" accept="image/*" hidden />
+            <img id="ai-preview" alt="" hidden />
+            <span id="ai-photo-label">📷 Add photo (optional)</span>
+          </label>
+          <button type="button" class="btn accent wide" id="ai-go">Estimate calories</button>
+        </div>
+        <div id="ai-result" hidden>
+          <input id="ai-name" class="field" placeholder="Name" autocomplete="off" />
+          <div class="kcal-edit">
+            <input id="ai-kcal" class="field" type="number" inputmode="numeric" min="0" />
+            <span>kcal</span>
+          </div>
+          <p class="notes" id="ai-notes"></p>
+          <div class="row">
+            <button type="button" class="btn" id="ai-back">Back</button>
+            <button type="submit" class="btn primary grow" id="ai-add">Add to log</button>
+          </div>
+        </div>
+        <p class="error" id="ai-error" hidden></p>
+      </form>
+    </dialog>
+
+    <!-- Settings -->
+    <dialog id="settings-sheet" class="sheet">
+      <form method="dialog" class="sheet-body" id="settings-form">
+        <div class="sheet-head">
+          <h2>Settings</h2>
+          <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+        </div>
+        <label class="lbl" for="set-key">Anthropic API key</label>
+        <input id="set-key" class="field" type="password" placeholder="sk-ant-…" autocomplete="off" />
+        <p class="hint">Stored only on this device and sent only to api.anthropic.com.</p>
+        <label class="lbl" for="set-goal">Daily goal (kcal, optional)</label>
+        <input id="set-goal" class="field" type="number" inputmode="numeric" min="0" placeholder="e.g. 2000" />
+        <button type="submit" class="btn primary wide">Save</button>
+        <div class="row">
+          <button type="button" class="btn grow" id="export">Export backup</button>
+          <label class="btn grow">Import backup<input type="file" id="import" accept="application/json" hidden /></label>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" hidden></div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
