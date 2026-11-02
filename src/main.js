@@ -159,9 +159,24 @@ function pressKey(key) {
   renderCalc();
 }
 
+// Keys react on pointerdown instead of click: on touch screens click only fires
+// after the finger lifts, which makes fast typing feel laggy.
+$("keypad").addEventListener("pointerdown", (e) => {
+  const btn = e.target.closest("[data-key]");
+  if (!btn) return;
+  e.preventDefault(); // keep focus where it is, no text selection
+  btn.classList.add("pressed");
+  pressKey(btn.dataset.key);
+});
+for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
+  $("keypad").addEventListener(type, () => {
+    for (const b of $("keypad").querySelectorAll(".pressed")) b.classList.remove("pressed");
+  });
+}
+// Keyboard activation (Enter/Space on a focused key) still arrives as a click with detail 0.
 $("keypad").onclick = (e) => {
   const key = e.target.closest("[data-key]")?.dataset.key;
-  if (key) pressKey(key);
+  if (key && e.detail === 0) pressKey(key);
 };
 
 // Physical keyboard support while the calculator is open (desktop use).
