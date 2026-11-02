@@ -4,7 +4,7 @@ A small calorie tracker you can install on Android as a PWA.
 
 - **Daily log**: one entry per day, with day-by-day navigation and an optional daily goal.
 - **Calculator**: add food with a built-in calculator (+ − × ÷ and parentheses), e.g. `250×2+80÷4`.
-- **Ask AI**: describe the food, add a weight and/or photo (take one with the camera or choose from the gallery), and Gemini (`gemini-3.8-flash`) estimates the calories. You can adjust the result before it goes into the log.
+- **Ask AI**: describe the food, add a weight and/or photo (take one with the camera or choose from the gallery), and Gemini (`gemini-3.6-flash`) estimates the calories. You can adjust the result before it goes into the log.
 - Everything is stored on the device (IndexedDB). Use **Settings → Export backup** to save a JSON copy.
 
 Tap an entry to edit or delete it.

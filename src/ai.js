@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const MODEL = "gemini-3.8-flash";
+const MODEL = "gemini-3.6-flash";
 const TIMEOUT_MS = 45000;
 
 const SYSTEM = `You estimate the calories of food for a personal calorie log.
