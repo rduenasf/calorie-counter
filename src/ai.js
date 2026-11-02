@@ -34,12 +34,6 @@ export async function prepareImage(file, maxEdge = 1568, quality = 0.85) {
   return { base64: dataUrl.split(",")[1], dataUrl };
 }
 
-// Small thumbnail kept with the log entry.
-export async function makeThumb(file) {
-  const { dataUrl } = await prepareImage(file, 160, 0.7);
-  return dataUrl;
-}
-
 export async function estimateCalories({ apiKey, description, weight, imageBase64 }) {
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 

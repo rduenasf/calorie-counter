@@ -1,6 +1,6 @@
 import { getDay, addEntry, updateEntry, deleteEntry, allDays, importDays } from "./db.js";
 import { tryEvaluate } from "./calc.js";
-import { estimateCalories, prepareImage, makeThumb } from "./ai.js";
+import { estimateCalories, prepareImage } from "./ai.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -63,12 +63,14 @@ async function render() {
   $("total").textContent = fmt(total);
 
   const goal = settings.goal;
+  // Warn when the total is within 500 kcal of the goal, alert once it's over.
+  const status = !goal ? "" : total > goal ? "over" : goal - total <= 500 ? "near" : "";
+  $("total").className = status;
+  $("goal-total").textContent = goal ? ` / ${fmt(goal)}` : "";
   $("goal-wrap").hidden = !goal;
   if (goal) {
-    const left = goal - total;
     $("goal-fill").style.width = `${Math.min(100, (total / goal) * 100)}%`;
-    $("goal-fill").classList.toggle("over", left < 0);
-    $("goal-text").textContent = left >= 0 ? `${fmt(left)} left of ${fmt(goal)}` : `${fmt(-left)} over ${fmt(goal)}`;
+    $("goal-fill").className = `fill ${status}`;
   }
 
   $("empty").hidden = day.entries.length > 0;
@@ -77,10 +79,10 @@ async function render() {
     .map(
       (e) => `
       <li class="entry" data-id="${e.id}">
-        ${e.thumb ? `<img class="thumb" src="${e.thumb}" alt="" />` : `<span class="thumb ph">${e.source === "ai" ? "✦" : "🍽"}</span>`}
+        <span class="entry-time">${e.createdAt ? fmtTime(e.createdAt) : ""}</span>
         <div class="entry-main">
           <div class="entry-name">${escapeHtml(e.name || "Food")}</div>
-          <div class="entry-note">${[e.createdAt ? `<span class="entry-time">${fmtTime(e.createdAt)}</span>` : "", escapeHtml(e.note)].filter(Boolean).join(" · ")}</div>
+          ${e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : ""}
         </div>
         <div class="entry-kcal">${fmt(e.kcal)}</div>
       </li>`
@@ -301,13 +303,11 @@ $("ai-form").onsubmit = async (e) => {
   const kcal = Math.round(Number($("ai-kcal").value));
   if (!Number.isFinite(kcal) || kcal < 0) return aiError("Enter a valid calorie number.");
   const weight = $("ai-weight").value.trim();
-  const thumb = aiPhoto ? await makeThumb(aiPhoto) : null;
   await addEntry(currentDate, {
     name: $("ai-name").value.trim() || "Food",
     kcal,
     source: "ai",
     note: [weight, aiNotes].filter(Boolean).join(" · "),
-    thumb,
   });
   $("ai-sheet").close();
   render();
