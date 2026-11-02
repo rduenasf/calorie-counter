@@ -72,7 +72,8 @@ async function render() {
   }
 
   $("empty").hidden = day.entries.length > 0;
-  $("entries").innerHTML = day.entries
+  $("entries").innerHTML = [...day.entries]
+    .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0))
     .map(
       (e) => `
       <li class="entry" data-id="${e.id}">

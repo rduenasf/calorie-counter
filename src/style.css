@@ -37,7 +37,7 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100dvh;
-  padding: env(safe-area-inset-top) 0 calc(88px + env(safe-area-inset-bottom));
+  padding: env(safe-area-inset-top) 0 calc(150px + env(safe-area-inset-bottom));
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -113,12 +113,12 @@ main { max-width: 640px; margin: 0 auto; padding: 0 16px; }
 
 .actions {
   position: fixed; left: 0; right: 0; bottom: 0;
-  display: flex; gap: 10px;
+  display: flex; flex-direction: column; gap: 10px;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: linear-gradient(transparent, var(--bg) 30%);
   max-width: 640px; margin: 0 auto;
 }
-.actions .btn { flex: 1; padding: 15px; font-size: 1.05rem; }
+.actions .btn { padding: 15px; font-size: 1.05rem; }
 
 .btn {
   border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius);
@@ -207,7 +207,7 @@ dialog.sheet[open] { animation: up 0.18s ease-out; }
 /* toast */
 
 .toast {
-  position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  position: fixed; left: 50%; bottom: calc(160px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 99px;
   font-size: 0.9rem; z-index: 10;
 }
