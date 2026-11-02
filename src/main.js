@@ -5,8 +5,8 @@ import { estimateCalories, prepareImage } from "./ai.js";
 const $ = (id) => document.getElementById(id);
 
 const settings = {
-  get apiKey() { return localStorage.getItem("apiKey") ?? ""; },
-  set apiKey(v) { localStorage.setItem("apiKey", v); },
+  get apiKey() { return localStorage.getItem("geminiKey") ?? ""; },
+  set apiKey(v) { localStorage.setItem("geminiKey", v); localStorage.removeItem("apiKey"); },
   get goal() { return Number(localStorage.getItem("goal")) || 0; },
   set goal(v) { localStorage.setItem("goal", String(v || "")); },
 };
@@ -254,7 +254,7 @@ function aiError(msg) {
 $("open-ai").onclick = () => {
   resetAi();
   $("ai-sheet").showModal();
-  if (!settings.apiKey) aiError("Add your Anthropic API key in Settings first.");
+  if (!settings.apiKey) aiError("Add your Gemini API key in Settings first.");
 };
 
 // Two inputs: "ai-camera" opens the camera directly (capture attribute), "ai-photo" opens the gallery.
@@ -275,7 +275,7 @@ $("ai-photo").onchange = onPhotoPicked;
 $("ai-go").onclick = async () => {
   const description = $("ai-desc").value.trim();
   const weight = $("ai-weight").value.trim();
-  if (!settings.apiKey) return aiError("Add your Anthropic API key in Settings first.");
+  if (!settings.apiKey) return aiError("Add your Gemini API key in Settings first.");
   if (!description && !aiPhoto) return aiError("Add a description or a photo.");
 
   const btn = $("ai-go");
