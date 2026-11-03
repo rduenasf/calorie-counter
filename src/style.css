@@ -92,6 +92,48 @@ button { touch-action: manipulation; }
 .fill.near { background: var(--warn); }
 .fill.over { background: var(--bad); }
 
+/* ---------- weekly bank ---------- */
+
+.week-btn {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+  border: 1px solid var(--border); background: var(--surface); border-radius: 99px;
+  padding: 5px 12px; font-size: 0.9rem; font-weight: 600; color: var(--muted); cursor: pointer;
+}
+.week-btn:active { background: var(--surface-2); }
+.week-btn[hidden] { display: none; }
+.week-count { color: var(--text); font-variant-numeric: tabular-nums; padding: 0 6px; border-radius: 8px; }
+.week-more { font-size: 1.1rem; line-height: 1; }
+
+.week-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-weight: 650; }
+.week-total { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.week-left { font-variant-numeric: tabular-nums; padding: 1px 8px; border-radius: 8px; }
+.week-left.near, .week-count.near { background: var(--warn); color: var(--warn-text); }
+.week-left.over, .week-count.over { background: var(--bad); color: var(--bad-text); }
+
+.week-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.wd {
+  display: grid; justify-items: center; gap: 3px; padding: 4px 0;
+  border: 0; background: none; border-radius: 10px; cursor: pointer; min-width: 0;
+}
+.wd.selected { background: var(--surface-2); }
+.wd-kcal { font-size: 0.68rem; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1em; }
+.wd-bar {
+  position: relative; width: 14px; height: 48px; border-radius: 99px;
+  background: var(--surface-2); overflow: hidden;
+}
+.wd.selected .wd-bar { background: var(--border); }
+/* Goal line at 2/3 height (matches the scale in renderWeek). */
+.wd-bar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 66.67%;
+  border-top: 1px dashed var(--muted); opacity: 0.6;
+}
+.wd-fill { position: absolute; left: 0; right: 0; bottom: 0; background: var(--primary); border-radius: 99px; }
+.wd-fill.over { background: var(--bad); }
+.wd-name { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+.wd.today .wd-name { color: var(--primary); }
+
+.week-tip { margin: 8px 0 0; font-size: 0.88rem; color: var(--muted); }
+
 /* ---------- entries ---------- */
 
 main { max-width: 640px; margin: 0 auto; padding: 0 16px; }

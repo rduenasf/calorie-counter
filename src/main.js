@@ -31,6 +31,12 @@ function shiftKey(key, days) {
   return toKey(d);
 }
 
+// Weeks run Monday–Sunday.
+function weekStartKey(key) {
+  const offset = (fromKey(key).getDay() + 6) % 7; // Mon = 0 … Sun = 6
+  return shiftKey(key, -offset);
+}
+
 function labelFor(key) {
   const today = toKey(new Date());
   if (key === today) return "Today";
@@ -54,17 +60,86 @@ const fmtTime = (ms) => {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
+const dayTotal = (day) => day.entries.reduce((sum, e) => sum + (Number(e.kcal) || 0), 0);
+
+// Same thresholds as the daily total: warn within 500 kcal of the budget, alert once over.
+const statusFor = (total, budget) => (total > budget ? "over" : budget - total <= 500 ? "near" : "");
+
+async function renderWeek(goal) {
+  $("open-week").hidden = !goal;
+  if (!goal) return;
+
+  const start = weekStartKey(currentDate);
+  const keys = Array.from({ length: 7 }, (_, i) => shiftKey(start, i));
+  const totals = await Promise.all(keys.map(async (k) => dayTotal(await getDay(k))));
+  const today = toKey(new Date());
+
+  const budget = goal * 7;
+  const weekTotal = totals.reduce((a, b) => a + b, 0);
+  const left = budget - weekTotal;
+  const status = statusFor(weekTotal, budget);
+
+  const end = keys[6];
+  const short = (k) => fromKey(k).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  $("week-title").textContent =
+    today >= start && today <= end ? "This week" : `Week of ${short(start)} – ${short(end)}`;
+  $("week-count").textContent = `${fmt(weekTotal)} / ${fmt(budget)}`;
+  $("week-count").className = `week-count ${status}`;
+  $("week-total").textContent = `${fmt(weekTotal)} / ${fmt(budget)} kcal`;
+  $("week-left").textContent = left >= 0 ? `${fmt(left)} left` : `${fmt(-left)} over`;
+  $("week-left").className = `week-left ${status}`;
+  $("week-fill").style.width = `${Math.min(100, (weekTotal / budget) * 100)}%`;
+  $("week-fill").className = `fill ${status}`;
+
+  // One mini bar per day; the goal line sits at 2/3 height so overs stay visible.
+  $("week-days").innerHTML = keys
+    .map((k, i) => {
+      const t = totals[i];
+      const h = Math.min(100, (t / goal) * (200 / 3));
+      const cls = [k === currentDate && "selected", k === today && "today"].filter(Boolean).join(" ");
+      const name = fromKey(k).toLocaleDateString(undefined, { weekday: "narrow" });
+      return `
+        <button type="button" class="wd ${cls}" data-date="${k}" aria-label="${labelFor(k)}: ${fmt(t)} kcal">
+          <span class="wd-kcal">${t ? fmt(t) : ""}</span>
+          <span class="wd-bar"><span class="wd-fill ${t > goal ? "over" : ""}" style="height:${h}%"></span></span>
+          <span class="wd-name">${name}</span>
+        </button>`;
+    })
+    .join("");
+
+  // The balancing tip: spread what's left of the week over today and the days after it.
+  // Days before today count as they were logged; today's partial total is part of the remainder.
+  let tip;
+  if (today > end) {
+    tip = left >= 0
+      ? `Week finished ${fmt(left)} kcal under budget.`
+      : `Week finished ${fmt(-left)} kcal over budget.`;
+  } else {
+    const firstOpen = today < start ? 0 : keys.indexOf(today);
+    const daysLeft = 7 - firstOpen;
+    const loggedBefore = totals.slice(0, firstOpen).reduce((a, b) => a + b, 0);
+    const perDay = (budget - loggedBefore) / daysLeft;
+    const diff = perDay - goal;
+    const when = daysLeft === 1 ? "today" : today < start ? "each day" : `a day for the ${daysLeft} days left`;
+    if (perDay <= 0) tip = `Weekly budget already used up — ${fmt(-perDay * daysLeft)} kcal over.`;
+    else if (Math.abs(diff) < 1) tip = `On track: ${fmt(goal)} kcal ${when}.`;
+    else
+      tip = `To balance the week: ~${fmt(perDay)} kcal ${when} (${fmt(Math.abs(diff))} ${diff < 0 ? "below" : "above"} your daily goal).`;
+  }
+  $("week-tip").textContent = tip;
+}
+
 async function render() {
   const day = await getDay(currentDate);
   $("date-label").textContent = labelFor(currentDate);
   $("date-picker").value = currentDate;
 
-  const total = day.entries.reduce((sum, e) => sum + (Number(e.kcal) || 0), 0);
+  const total = dayTotal(day);
   $("total").textContent = fmt(total);
 
   const goal = settings.goal;
-  // Warn when the total is within 500 kcal of the goal, alert once it's over.
-  const status = !goal ? "" : total > goal ? "over" : goal - total <= 500 ? "near" : "";
+  await renderWeek(goal);
+  const status = goal ? statusFor(total, goal) : "";
   $("total").className = status;
   $("goal-total").textContent = goal ? ` / ${fmt(goal)}` : "";
   $("goal-wrap").hidden = !goal;
@@ -109,6 +184,13 @@ $("date-label").onclick = () => {
 $("date-picker").onchange = (e) => {
   if (e.target.value) { currentDate = e.target.value; render(); }
 };
+
+$("week-days").onclick = (e) => {
+  const date = e.target.closest("[data-date]")?.dataset.date;
+  if (date && date !== currentDate) { currentDate = date; render(); }
+};
+
+$("open-week").onclick = () => $("week-sheet").showModal();
 
 // Jump back to today when the app is reopened on a new day.
 let lastSeenToday = toKey(new Date());

@@ -27,6 +27,11 @@
       <div class="goal" id="goal-wrap" hidden>
         <div class="bar"><div class="fill" id="goal-fill"></div></div>
       </div>
+
+      <!-- Weekly calorie bank: daily goal × 7, for the week containing the selected day. Tap for details. -->
+      <button type="button" class="week-btn" id="open-week" hidden>
+        <span>Week</span> <span id="week-count" class="week-count"></span> <span class="week-more">›</span>
+      </button>
     </section>
 
     <main>
@@ -117,6 +122,23 @@
         </div>
         <p class="error" id="ai-error" hidden></p>
       </form>
+    </dialog>
+
+    <!-- Weekly bank -->
+    <dialog id="week-sheet" class="sheet">
+      <div class="sheet-body">
+        <div class="sheet-head">
+          <h2 id="week-title">This week</h2>
+          <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+        </div>
+        <div class="week-head">
+          <span class="week-total" id="week-total"></span>
+          <span class="week-left" id="week-left"></span>
+        </div>
+        <div class="bar"><div class="fill" id="week-fill"></div></div>
+        <div class="week-days" id="week-days"></div>
+        <p class="week-tip" id="week-tip"></p>
+      </div>
     </dialog>
 
     <!-- Settings -->
