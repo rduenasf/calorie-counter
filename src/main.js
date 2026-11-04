@@ -218,6 +218,17 @@ for (const dlg of document.querySelectorAll("dialog.sheet")) {
 
 let calcExpr = "";
 let editingId = null;
+let editingAi = false;
+let calcPrior = null; // { expr, result } from the last "=", which collapses calcExpr to its result
+
+// The full calculation behind calcExpr, including what "=" collapsed.
+function calcSteps() {
+  if (!calcPrior) return calcExpr;
+  if (calcExpr === calcPrior.result) return calcPrior.expr;
+  const rest = calcExpr.slice(calcPrior.result.length);
+  if (!calcExpr.startsWith(calcPrior.result) || !/^[+−×÷]/.test(rest)) return calcExpr;
+  return /^[×÷]/.test(rest) && /[+−]/.test(calcPrior.expr) ? `(${calcPrior.expr})${rest}` : calcPrior.expr + rest;
+}
 
 function renderCalc() {
   $("calc-expr").textContent = calcExpr || " ";
@@ -230,7 +241,10 @@ function renderCalc() {
 
 function openCalc(entry) {
   editingId = entry?.id ?? null;
-  calcExpr = entry ? String(entry.kcal) : "";
+  editingAi = entry?.source === "ai";
+  calcPrior = null;
+  // Manual entries reopen with their calculation; AI notes are prose, so those start from the number.
+  calcExpr = !entry ? "" : !editingAi && entry.note ? entry.note : String(entry.kcal);
   $("calc-name").value = entry?.name ?? "";
   $("calc-title").textContent = entry ? "Edit entry" : "Add food";
   $("calc-delete").hidden = !entry;
@@ -240,11 +254,15 @@ function openCalc(entry) {
 }
 
 function pressKey(key) {
-  if (key === "C") calcExpr = "";
+  if (key === "C") { calcExpr = ""; calcPrior = null; }
   else if (key === "back") calcExpr = calcExpr.slice(0, -1);
   else if (key === "=") {
     const v = tryEvaluate(calcExpr);
-    if (v !== null) calcExpr = String(Math.round(v * 100) / 100);
+    if (v !== null) {
+      const result = String(Math.round(v * 100) / 100);
+      calcPrior = { expr: calcSteps(), result };
+      calcExpr = result;
+    }
   } else calcExpr += key;
   renderCalc();
 }
@@ -287,8 +305,11 @@ $("calc-form").onsubmit = async (e) => {
   if (v === null || v < 0) return;
   const kcal = Math.round(v);
   const name = $("calc-name").value.trim() || "Food";
-  if (editingId) await updateEntry(currentDate, editingId, { name, kcal });
-  else await addEntry(currentDate, { name, kcal, source: "manual" });
+  // A plain number has no operations to record, so it leaves (or clears to) an empty note.
+  const steps = calcSteps();
+  const note = /[+−×÷]/.test(steps) ? steps : "";
+  if (editingId) await updateEntry(currentDate, editingId, editingAi ? { name, kcal } : { name, kcal, note });
+  else await addEntry(currentDate, { name, kcal, source: "manual", note });
   $("calc-sheet").close();
   render();
 };
