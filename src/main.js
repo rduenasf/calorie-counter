@@ -62,8 +62,8 @@ const fmtTime = (ms) => {
 
 const dayTotal = (day) => day.entries.reduce((sum, e) => sum + (Number(e.kcal) || 0), 0);
 
-// Same thresholds as the daily total: warn within 500 kcal of the budget, alert once over.
-const statusFor = (total, budget) => (total > budget ? "over" : budget - total <= 500 ? "near" : "");
+// Warn within 25% of the daily goal of the budget, alert once over.
+const statusFor = (total, budget, goal) => (total > budget ? "over" : budget - total <= goal * 0.25 ? "near" : "");
 
 async function renderWeek(goal) {
   $("open-week").hidden = !goal;
@@ -77,7 +77,7 @@ async function renderWeek(goal) {
   const budget = goal * 7;
   const weekTotal = totals.reduce((a, b) => a + b, 0);
   const left = budget - weekTotal;
-  const status = statusFor(weekTotal, budget);
+  const status = statusFor(weekTotal, budget, goal);
 
   const end = keys[6];
   const short = (k) => fromKey(k).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -139,7 +139,7 @@ async function render() {
 
   const goal = settings.goal;
   await renderWeek(goal);
-  const status = goal ? statusFor(total, goal) : "";
+  const status = goal ? statusFor(total, goal, goal) : "";
   $("total").className = status;
   $("goal-total").textContent = goal ? ` / ${fmt(goal)}` : "";
   $("goal-wrap").hidden = !goal;
