@@ -1,5 +1,6 @@
 // Tiny IndexedDB wrapper. One record per day, keyed by local date "YYYY-MM-DD":
-// { date, entries: [{ id, name, kcal, source: "manual" | "ai", note, thumb, createdAt }] }
+// { date, invalid?: true, entries: [{ id, name, kcal, source: "manual" | "ai", note, thumb, createdAt }] }
+// An invalid day keeps its entries but is left out of the weekly total and budget.
 
 const DB_NAME = "calorie-counter";
 const STORE = "days";
@@ -45,6 +46,13 @@ export async function getDay(date) {
 
 export function putDay(day) {
   return tx("readwrite", (store) => store.put(day));
+}
+
+export async function setDayInvalid(date, invalid) {
+  const day = await getDay(date);
+  if (invalid) day.invalid = true;
+  else delete day.invalid;
+  await putDay(day);
 }
 
 export async function addEntry(date, entry) {

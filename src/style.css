@@ -131,8 +131,11 @@ button { touch-action: manipulation; }
 .wd-fill.over { background: var(--bad); }
 .wd-name { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
 .wd.today .wd-name { color: var(--primary); }
+.wd.invalid .wd-kcal, .wd.invalid .wd-name { text-decoration: line-through; opacity: 0.7; }
+.wd.invalid .wd-fill { background: var(--muted); opacity: 0.5; }
 
 .week-tip { margin: 8px 0 0; font-size: 0.88rem; color: var(--muted); }
+.day-invalid { margin: 8px 0 0; font-size: 0.85rem; color: var(--muted); }
 
 /* ---------- entries ---------- */
 

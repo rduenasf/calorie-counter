@@ -28,10 +28,11 @@
         <div class="bar"><div class="fill" id="goal-fill"></div></div>
       </div>
 
-      <!-- Weekly calorie bank: daily goal × 7, for the week containing the selected day. Tap for details. -->
+      <!-- Weekly calorie bank: daily goal × counted days (7 minus invalid days), for the week containing the selected day. Tap for details. -->
       <button type="button" class="week-btn" id="open-week" hidden>
         <span>Week</span> <span id="week-count" class="week-count"></span> <span class="week-more">›</span>
       </button>
+      <p class="day-invalid" id="day-invalid" hidden>Invalid day: not counted in the week</p>
     </section>
 
     <main>
@@ -138,6 +139,7 @@
         <div class="bar"><div class="fill" id="week-fill"></div></div>
         <div class="week-days" id="week-days"></div>
         <p class="week-tip" id="week-tip"></p>
+        <button type="button" class="btn wide" id="toggle-invalid"></button>
       </div>
     </dialog>
 

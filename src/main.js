@@ -1,4 +1,4 @@
-import { getDay, addEntry, updateEntry, deleteEntry, allDays, importDays } from "./db.js";
+import { getDay, setDayInvalid, addEntry, updateEntry, deleteEntry, allDays, importDays } from "./db.js";
 import { tryEvaluate } from "./calc.js";
 import { estimateCalories, prepareImage } from "./ai.js";
 
@@ -67,17 +67,22 @@ const statusFor = (total, budget, goal) => (total > budget ? "over" : budget - t
 
 async function renderWeek(goal) {
   $("open-week").hidden = !goal;
+  $("day-invalid").hidden = true;
   if (!goal) return;
 
   const start = weekStartKey(currentDate);
   const keys = Array.from({ length: 7 }, (_, i) => shiftKey(start, i));
-  const totals = await Promise.all(keys.map(async (k) => dayTotal(await getDay(k))));
+  const days = await Promise.all(keys.map((k) => getDay(k)));
+  const totals = days.map(dayTotal);
   const today = toKey(new Date());
 
-  const budget = goal * 7;
-  const weekTotal = totals.reduce((a, b) => a + b, 0);
+  // Invalid days drop out of both sides: their calories and their share of the budget.
+  const counted = keys.map((key, i) => ({ key, total: totals[i], invalid: days[i].invalid })).filter((d) => !d.invalid);
+  const sumTotals = (list) => list.reduce((sum, d) => sum + d.total, 0);
+  const budget = goal * counted.length;
+  const weekTotal = sumTotals(counted);
   const left = budget - weekTotal;
-  const status = statusFor(weekTotal, budget, goal);
+  const status = budget ? statusFor(weekTotal, budget, goal) : "";
 
   const end = keys[6];
   const short = (k) => fromKey(k).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -88,18 +93,24 @@ async function renderWeek(goal) {
   $("week-total").textContent = `${fmt(weekTotal)} / ${fmt(budget)} kcal`;
   $("week-left").textContent = left >= 0 ? `${fmt(left)} left` : `${fmt(-left)} over`;
   $("week-left").className = `week-left ${status}`;
-  $("week-fill").style.width = `${Math.min(100, (weekTotal / budget) * 100)}%`;
+  $("week-fill").style.width = `${budget ? Math.min(100, (weekTotal / budget) * 100) : 0}%`;
   $("week-fill").className = `fill ${status}`;
+
+  const selectedInvalid = !!days[keys.indexOf(currentDate)].invalid;
+  const selectedName = fromKey(currentDate).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  $("day-invalid").hidden = !selectedInvalid;
+  $("toggle-invalid").textContent = selectedInvalid ? `Count ${selectedName} again` : `Mark ${selectedName} as invalid`;
 
   // One mini bar per day; the goal line sits at 2/3 height so overs stay visible.
   $("week-days").innerHTML = keys
     .map((k, i) => {
       const t = totals[i];
       const h = Math.min(100, (t / goal) * (200 / 3));
-      const cls = [k === currentDate && "selected", k === today && "today"].filter(Boolean).join(" ");
+      const invalid = days[i].invalid;
+      const cls = [k === currentDate && "selected", k === today && "today", invalid && "invalid"].filter(Boolean).join(" ");
       const name = fromKey(k).toLocaleDateString(undefined, { weekday: "narrow" });
       return `
-        <button type="button" class="wd ${cls}" data-date="${k}" aria-label="${labelFor(k)}: ${fmt(t)} kcal">
+        <button type="button" class="wd ${cls}" data-date="${k}" aria-label="${labelFor(k)}: ${fmt(t)} kcal${invalid ? ", invalid, not counted" : ""}">
           <span class="wd-kcal">${t ? fmt(t) : ""}</span>
           <span class="wd-bar"><span class="wd-fill ${t > goal ? "over" : ""}" style="height:${h}%"></span></span>
           <span class="wd-name">${name}</span>
@@ -109,18 +120,24 @@ async function renderWeek(goal) {
 
   // The balancing tip: spread what's left of the week over today and the days after it.
   // Days before today count as they were logged; today's partial total is part of the remainder.
+  // Invalid days are skipped on both sides, so a week with no counted days left is finished.
+  const open = counted.filter((d) => d.key >= today);
   let tip;
-  if (today > end) {
+  if (!budget) {
+    tip = "Every day this week is marked invalid, so nothing counts.";
+  } else if (!open.length) {
     tip = left >= 0
       ? `Week finished ${fmt(left)} kcal under budget.`
       : `Week finished ${fmt(-left)} kcal over budget.`;
   } else {
-    const firstOpen = today < start ? 0 : keys.indexOf(today);
-    const daysLeft = 7 - firstOpen;
-    const loggedBefore = totals.slice(0, firstOpen).reduce((a, b) => a + b, 0);
+    const daysLeft = open.length;
+    const loggedBefore = weekTotal - sumTotals(open);
     const perDay = (budget - loggedBefore) / daysLeft;
     const diff = perDay - goal;
-    const when = daysLeft === 1 ? "today" : today < start ? "each day" : `a day for the ${daysLeft} days left`;
+    const onlyDay = fromKey(open[0].key).toLocaleDateString(undefined, { weekday: "long" });
+    const when = daysLeft > 1
+      ? (today < start ? "each day" : `a day for the ${daysLeft} days left`)
+      : open[0].key === today ? "today" : `on ${onlyDay}`;
     if (perDay <= 0) tip = `Weekly budget already used up — ${fmt(-perDay * daysLeft)} kcal over.`;
     else if (Math.abs(diff) < 1) tip = `On track: ${fmt(goal)} kcal ${when}.`;
     else
@@ -191,6 +208,12 @@ $("week-days").onclick = (e) => {
 };
 
 $("open-week").onclick = () => $("week-sheet").showModal();
+
+$("toggle-invalid").onclick = async () => {
+  const day = await getDay(currentDate);
+  await setDayInvalid(currentDate, !day.invalid);
+  render();
+};
 
 // Jump back to today when the app is reopened on a new day.
 let lastSeenToday = toKey(new Date());
