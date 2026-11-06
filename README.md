@@ -8,7 +8,7 @@ A small calorie tracker you can install on Android as a PWA.
 - **Weekly bank**: tap the Week pill to see the week against goal × 7. Select a day there and mark it as invalid to leave it out, so one invalid day makes the budget goal × 6 and its calories stop counting.
 - Everything is stored on the device (IndexedDB). Use **Settings → Export backup** to save a JSON copy.
 
-Tap an entry to edit or delete it.
+Tap an entry to edit or delete it. Press and hold one, then release, to copy its notes to the clipboard.
 
 ## Run locally
 

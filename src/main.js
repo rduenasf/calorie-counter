@@ -345,12 +345,70 @@ $("calc-delete").onclick = async () => {
 };
 
 $("entries").onclick = async (e) => {
+  if (suppressClick) return; // the end of a long press, not a tap
   const id = e.target.closest(".entry")?.dataset.id;
   if (!id) return;
   const day = await getDay(currentDate);
   const entry = day.entries.find((x) => x.id === id);
   if (entry) openCalc(entry);
 };
+
+// ---------- long press copies an entry's notes ----------
+
+const HOLD_MS = 500;
+const HOLD_SLOP_PX = 10; // moving further than this is a scroll, not a hold
+
+let press = null; // { el, x, y, timer, held }
+let suppressClick = false;
+
+function endPress() {
+  const ended = press;
+  press = null;
+  clearTimeout(ended.timer);
+  ended.el.classList.remove("held");
+  return ended;
+}
+
+async function copyNote(el) {
+  const note = el.querySelector(".entry-note")?.textContent;
+  if (!note) return toast("No notes on this entry");
+  try {
+    await navigator.clipboard.writeText(note);
+    toast("Notes copied");
+  } catch {
+    toast("Couldn't copy notes");
+  }
+}
+
+$("entries").addEventListener("pointerdown", (e) => {
+  suppressClick = false;
+  const el = e.target.closest(".entry");
+  if (!el || !e.isPrimary || e.button !== 0) return;
+  const timer = setTimeout(() => {
+    press.held = true;
+    suppressClick = true;
+    el.classList.add("held");
+    navigator.vibrate?.(30);
+  }, HOLD_MS);
+  press = { el, x: e.clientX, y: e.clientY, timer, held: false };
+});
+
+window.addEventListener("pointermove", (e) => {
+  if (press && !press.held && Math.hypot(e.clientX - press.x, e.clientY - press.y) > HOLD_SLOP_PX) endPress();
+});
+
+// Copy on release, not when the timer fires: Safari only allows clipboard
+// writes during a user gesture, and pointerup counts as one but a timer doesn't.
+window.addEventListener("pointerup", () => {
+  if (!press) return;
+  const { el, held } = endPress();
+  if (held) copyNote(el);
+});
+
+window.addEventListener("pointercancel", () => { if (press) endPress(); });
+
+// Android reports a long press as a context menu.
+$("entries").addEventListener("contextmenu", (e) => { if (press) e.preventDefault(); });
 
 // ---------- AI estimate ----------
 
