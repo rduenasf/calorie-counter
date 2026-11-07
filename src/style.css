@@ -141,7 +141,8 @@ button { touch-action: manipulation; }
 
 main { max-width: 640px; margin: 0 auto; padding: 0 16px; }
 
-.entries { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+/* minmax(0, 1fr): a plain 1fr track grows to fit a long unwrapped name and pushes the list off-screen. */
+.entries { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 
 .entry {
   display: flex; align-items: center; gap: 12px;
@@ -156,11 +157,11 @@ main { max-width: 640px; margin: 0 auto; padding: 0 16px; }
 .entry-main { flex: 1; min-width: 0; }
 .entry-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .entry-note {
-  font-size: 0.82rem; color: var(--muted); margin-top: 2px;
+  font-size: 0.82rem; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .entry-time { flex: none; width: 3.2rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
-.entry-kcal { font-size: 1.45rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.entry-kcal { flex: none; font-size: 1.45rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .empty { text-align: center; color: var(--muted); padding: 32px 0; }
 
