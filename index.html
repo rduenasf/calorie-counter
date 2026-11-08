@@ -52,6 +52,7 @@
           <h2 id="calc-title">Add food</h2>
           <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
         </div>
+        <img id="calc-thumb" class="photo-preview" alt="" hidden />
         <input id="calc-name" class="field" placeholder="What did you eat?" autocomplete="off" />
         <div class="display">
           <div class="expr" id="calc-expr">&nbsp;</div>
@@ -156,6 +157,11 @@
         <label class="lbl" for="set-goal">Daily goal (kcal, optional)</label>
         <input id="set-goal" class="field" type="number" inputmode="numeric" min="0" placeholder="e.g. 2000" />
         <button type="submit" class="btn primary wide">Save</button>
+        <div class="sync" id="sync" hidden>
+          <span class="lbl">Sync between devices</span>
+          <p class="hint" id="sync-status"></p>
+          <button type="button" class="btn wide" id="sync-btn"></button>
+        </div>
         <div class="row">
           <button type="button" class="btn grow" id="export">Export backup</button>
           <label class="btn grow">Import backup<input type="file" id="import" accept="application/json" hidden /></label>

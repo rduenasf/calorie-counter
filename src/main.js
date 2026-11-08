@@ -1,6 +1,8 @@
-import { getDay, setDayInvalid, addEntry, updateEntry, deleteEntry, allDays, importDays } from "./db.js";
+import { getDay, setDayInvalid, addEntry, updateEntry, deleteEntry, allDays, importDays, setChangeListener } from "./db.js";
 import { tryEvaluate } from "./calc.js";
 import { estimateCalories, prepareImage } from "./ai.js";
+import { firebaseConfig } from "./firebase-config.js";
+import { recordChange } from "./outbox.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -54,6 +56,9 @@ function escapeHtml(s) {
 }
 
 const fmt = (n) => Math.round(n).toLocaleString();
+
+// Thumbs can arrive from a backup file or sync, so only accept a plain JPEG data URL before putting it in src.
+const isThumb = (s) => typeof s === "string" && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(s);
 
 const fmtTime = (ms) => {
   const d = new Date(ms);
@@ -172,6 +177,7 @@ async function render() {
       (e) => `
       <li class="entry" data-id="${e.id}">
         <span class="entry-time">${e.createdAt ? fmtTime(e.createdAt) : ""}</span>
+        ${isThumb(e.thumb) ? `<img class="entry-thumb" src="${e.thumb}" alt="" />` : ""}
         <div class="entry-main">
           <div class="entry-name">${escapeHtml(e.name || "Food")}</div>
           ${e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : ""}
@@ -271,6 +277,10 @@ function openCalc(entry) {
   $("calc-name").value = entry?.name ?? "";
   $("calc-title").textContent = entry ? "Edit entry" : "Add food";
   $("calc-delete").hidden = !entry;
+  const thumb = $("calc-thumb");
+  thumb.hidden = !isThumb(entry?.thumb);
+  if (!thumb.hidden) thumb.src = entry.thumb;
+  else thumb.removeAttribute("src");
   renderCalc();
   $("calc-sheet").showModal();
   $("calc-name").blur();
@@ -414,6 +424,7 @@ $("entries").addEventListener("contextmenu", (e) => { if (press) e.preventDefaul
 
 let aiPhoto = null; // File
 let aiNotes = "";
+const THUMB_EDGE = 320; // px on the long edge, about 15–30 KB as JPEG
 
 function resetAi() {
   $("ai-desc").value = "";
@@ -495,11 +506,17 @@ $("ai-form").onsubmit = async (e) => {
   const kcal = Math.round(Number($("ai-kcal").value));
   if (!Number.isFinite(kcal) || kcal < 0) return aiError("Enter a valid calorie number.");
   const weight = $("ai-weight").value.trim();
+  // A small copy of the photo travels with the entry (and through sync); the full photo isn't kept.
+  let thumb;
+  try {
+    if (aiPhoto) thumb = (await prepareImage(aiPhoto, THUMB_EDGE, 0.7)).dataUrl;
+  } catch {}
   await addEntry(currentDate, {
     name: $("ai-name").value.trim() || "Food",
     kcal,
     source: "ai",
     note: [weight, aiNotes].filter(Boolean).join(" · "),
+    thumb,
   });
   $("ai-sheet").close();
   render();
@@ -547,6 +564,55 @@ $("import").onchange = async (e) => {
     e.target.value = "";
   }
 };
+
+// ---------- sync ----------
+
+// Only with a Firebase config. Changes are recorded from the start, so ones made while
+// the SDK is still loading, offline, or signed out are pushed once sync is running.
+let sync = null; // the sync.js module once loaded
+
+function renderSync(s) {
+  const el = $("sync-status");
+  const msg = {
+    "signed-out": "Sign in to keep this log in sync on all your devices. Entries already here are added to your account.",
+    syncing: `Syncing as ${s.user}…`,
+    synced: `Synced as ${s.user}.`,
+    offline: `Signed in as ${s.user}. Offline: changes sync when you're back online.`,
+    error: `Sync error: ${s.error}`,
+  }[s.state];
+  el.textContent = msg ?? "";
+  el.className = `hint ${s.state === "error" ? "error" : ""}`;
+  $("sync-btn").textContent = s.user ? "Sign out" : "Sign in with Google";
+  $("sync-btn").dataset.signedIn = s.user ? "1" : "";
+}
+
+if (firebaseConfig) {
+  setChangeListener((c) => {
+    recordChange(c);
+    sync?.flush();
+  });
+  $("sync").hidden = false;
+  renderSync({ state: "signed-out" });
+  import("./sync.js")
+    .then((mod) => {
+      sync = mod;
+      mod.initSync({ onRemoteChange: render, onStatus: renderSync });
+    })
+    .catch((err) => renderSync({ state: "error", error: `couldn't load (${err.message})` }));
+
+  $("sync-btn").onclick = async () => {
+    if (!sync) return toast("Sync is still loading");
+    try {
+      if ($("sync-btn").dataset.signedIn) {
+        if (confirm("Sign out? The log stays on this device but stops syncing.")) await sync.signOut();
+      } else {
+        await sync.signIn();
+      }
+    } catch (err) {
+      toast(`Sign-in failed: ${err.code ?? err.message}`);
+    }
+  };
+}
 
 // ---------- boot ----------
 
