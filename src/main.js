@@ -275,6 +275,9 @@ function openCalc(entry) {
   // Manual entries reopen with their calculation; AI notes are prose, so those start from the number.
   calcExpr = !entry ? "" : !editingAi && entry.note ? entry.note : String(entry.kcal);
   $("calc-name").value = entry?.name ?? "";
+  // AI notes are prose rather than a calculation, so they get their own editable field.
+  $("calc-note").hidden = !editingAi;
+  $("calc-note").value = editingAi ? entry.note ?? "" : "";
   $("calc-title").textContent = entry ? "Edit entry" : "Add food";
   $("calc-delete").hidden = !entry;
   const thumb = $("calc-thumb");
@@ -284,6 +287,7 @@ function openCalc(entry) {
   renderCalc();
   $("calc-sheet").showModal();
   $("calc-name").blur();
+  $("calc-note").blur();
 }
 
 function pressKey(key) {
@@ -322,7 +326,7 @@ $("keypad").onclick = (e) => {
 
 // Physical keyboard support while the calculator is open (desktop use).
 $("calc-sheet").addEventListener("keydown", (e) => {
-  if (e.target === $("calc-name")) return;
+  if (e.target === $("calc-name") || e.target === $("calc-note")) return;
   const map = { "*": "×", "/": "÷", "-": "−", Backspace: "back", Enter: "=", Escape: null };
   if (/^[0-9.+()]$/.test(e.key)) pressKey(e.key);
   else if (e.key in map && map[e.key]) pressKey(map[e.key]);
@@ -341,7 +345,7 @@ $("calc-form").onsubmit = async (e) => {
   // A plain number has no operations to record, so it leaves (or clears to) an empty note.
   const steps = calcSteps();
   const note = /[+−×÷]/.test(steps) ? steps : "";
-  if (editingId) await updateEntry(currentDate, editingId, editingAi ? { name, kcal } : { name, kcal, note });
+  if (editingId) await updateEntry(currentDate, editingId, editingAi ? { name, kcal, note: $("calc-note").value.trim() } : { name, kcal, note });
   else await addEntry(currentDate, { name, kcal, source: "manual", note });
   $("calc-sheet").close();
   render();
