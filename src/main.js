@@ -432,7 +432,6 @@ const THUMB_EDGE = 320; // px on the long edge, about 15–30 KB as JPEG
 
 function resetAi() {
   $("ai-desc").value = "";
-  $("ai-weight").value = "";
   aiPhoto = null;
   $("ai-preview").hidden = true;
   $("ai-camera-label").textContent = "📷 Take photo";
@@ -473,7 +472,6 @@ $("ai-photo").onchange = onPhotoPicked;
 
 $("ai-go").onclick = async () => {
   const description = $("ai-desc").value.trim();
-  const weight = $("ai-weight").value.trim();
   if (!settings.apiKey) return aiError("Add your Gemini API key in Settings first.");
   if (!description && !aiPhoto) return aiError("Add a description or a photo.");
 
@@ -488,7 +486,7 @@ $("ai-go").onclick = async () => {
   }, 1000);
   try {
     const imageBase64 = aiPhoto ? (await prepareImage(aiPhoto)).base64 : null;
-    const result = await estimateCalories({ apiKey: settings.apiKey, description, weight, imageBase64 });
+    const result = await estimateCalories({ apiKey: settings.apiKey, description, imageBase64 });
     $("ai-name").value = result.name;
     $("ai-kcal").value = result.kcal;
     aiNotes = result.notes;
@@ -509,7 +507,6 @@ $("ai-form").onsubmit = async (e) => {
   e.preventDefault();
   const kcal = Math.round(Number($("ai-kcal").value));
   if (!Number.isFinite(kcal) || kcal < 0) return aiError("Enter a valid calorie number.");
-  const weight = $("ai-weight").value.trim();
   // A small copy of the photo travels with the entry (and through sync); the full photo isn't kept.
   let thumb;
   try {
@@ -519,7 +516,7 @@ $("ai-form").onsubmit = async (e) => {
     name: $("ai-name").value.trim() || "Food",
     kcal,
     source: "ai",
-    note: [weight, aiNotes].filter(Boolean).join(" · "),
+    note: aiNotes,
     thumb,
   });
   $("ai-sheet").close();

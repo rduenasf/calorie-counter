@@ -4,7 +4,7 @@ const MODEL = "gemini-3.6-flash";
 const TIMEOUT_MS = 45000;
 
 const SYSTEM = `You estimate the calories of food for a personal calorie log.
-The user gives a short description, optionally a weight, and optionally a photo.
+The user gives a short description, which may include a weight, and optionally a photo.
 Use the weight when given; otherwise infer a typical portion from the photo or description.
 Account for visible cooking oil, sauces, dressings and drinks.
 Give a single best-estimate number of kilocalories for everything described or shown, not a range.
@@ -45,13 +45,12 @@ function apiMessage(err) {
   return String(err?.message ?? "");
 }
 
-export async function estimateCalories({ apiKey, description, weight, imageBase64 }) {
+export async function estimateCalories({ apiKey, description, imageBase64 }) {
   const client = new GoogleGenAI({ apiKey });
 
   const lines = [];
   if (description) lines.push(`Description: ${description}`);
-  if (weight) lines.push(`Weight: ${weight}`);
-  if (!description && !weight) lines.push("Estimate the calories of the food in the photo.");
+  if (!description) lines.push("Estimate the calories of the food in the photo.");
 
   // Text before the image, as the Gemini docs recommend for a single image.
   const input = [{ type: "text", text: lines.join("\n") }];
