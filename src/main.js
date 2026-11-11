@@ -66,6 +66,14 @@ const fmtTime = (ms) => {
 };
 
 const dayTotal = (day) => day.entries.reduce((sum, e) => sum + (Number(e.kcal) || 0), 0);
+const hasProtein = (e) => typeof e.protein === "number" && Number.isFinite(e.protein);
+// Protein is optional: a blank field gives null, which also clears it on an edit; undefined means invalid.
+function readProtein(input) {
+  const raw = input.value.trim();
+  if (!raw) return null;
+  const g = Number(raw);
+  return Number.isFinite(g) && g >= 0 ? Math.round(g) : undefined;
+}
 
 // Warn within 25% of the daily goal of the budget, alert once over.
 const statusFor = (total, budget, goal) => (total > budget ? "over" : budget - total <= goal * 0.25 ? "near" : "");
@@ -159,6 +167,10 @@ async function render() {
   const total = dayTotal(day);
   $("total").textContent = fmt(total);
 
+  const withProtein = day.entries.filter(hasProtein);
+  $("protein-total").hidden = !withProtein.length;
+  $("protein-total").textContent = `${fmt(withProtein.reduce((sum, e) => sum + e.protein, 0))} g protein`;
+
   const goal = settings.goal;
   await renderWeek(goal);
   const status = goal ? statusFor(total, goal, goal) : "";
@@ -182,7 +194,10 @@ async function render() {
           <div class="entry-name">${escapeHtml(e.name || "Food")}</div>
           ${e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : ""}
         </div>
-        <div class="entry-kcal">${fmt(e.kcal)}</div>
+        <div class="entry-side">
+          <div class="entry-kcal">${fmt(e.kcal)}</div>
+          ${hasProtein(e) ? `<div class="entry-protein">${fmt(e.protein)} g protein</div>` : ""}
+        </div>
       </li>`
     )
     .join("");
@@ -275,6 +290,7 @@ function openCalc(entry) {
   // Manual entries reopen with their calculation; AI notes are prose, so those start from the number.
   calcExpr = !entry ? "" : !editingAi && entry.note ? entry.note : String(entry.kcal);
   $("calc-name").value = entry?.name ?? "";
+  $("calc-protein").value = entry && hasProtein(entry) ? entry.protein : "";
   // AI notes are prose rather than a calculation, so they get their own editable field.
   $("calc-note").hidden = !editingAi;
   $("calc-note").value = editingAi ? entry.note ?? "" : "";
@@ -287,6 +303,7 @@ function openCalc(entry) {
   renderCalc();
   $("calc-sheet").showModal();
   $("calc-name").blur();
+  $("calc-protein").blur();
   $("calc-note").blur();
 }
 
@@ -326,7 +343,7 @@ $("keypad").onclick = (e) => {
 
 // Physical keyboard support while the calculator is open (desktop use).
 $("calc-sheet").addEventListener("keydown", (e) => {
-  if (e.target === $("calc-name") || e.target === $("calc-note")) return;
+  if (e.target === $("calc-name") || e.target === $("calc-protein") || e.target === $("calc-note")) return;
   const map = { "*": "×", "/": "÷", "-": "−", Backspace: "back", Enter: "=", Escape: null };
   if (/^[0-9.+()]$/.test(e.key)) pressKey(e.key);
   else if (e.key in map && map[e.key]) pressKey(map[e.key]);
@@ -342,11 +359,13 @@ $("calc-form").onsubmit = async (e) => {
   if (v === null || v < 0) return;
   const kcal = Math.round(v);
   const name = $("calc-name").value.trim() || "Food";
+  const protein = readProtein($("calc-protein"));
+  if (protein === undefined) return toast("Enter a valid protein amount");
   // A plain number has no operations to record, so it leaves (or clears to) an empty note.
   const steps = calcSteps();
   const note = /[+−×÷]/.test(steps) ? steps : "";
-  if (editingId) await updateEntry(currentDate, editingId, editingAi ? { name, kcal, note: $("calc-note").value.trim() } : { name, kcal, note });
-  else await addEntry(currentDate, { name, kcal, source: "manual", note });
+  if (editingId) await updateEntry(currentDate, editingId, editingAi ? { name, kcal, protein, note: $("calc-note").value.trim() } : { name, kcal, protein, note });
+  else await addEntry(currentDate, { name, kcal, protein, source: "manual", note });
   $("calc-sheet").close();
   render();
 };
@@ -489,6 +508,7 @@ $("ai-go").onclick = async () => {
     const result = await estimateCalories({ apiKey: settings.apiKey, description, imageBase64 });
     $("ai-name").value = result.name;
     $("ai-kcal").value = result.kcal;
+    $("ai-protein").value = result.protein ?? "";
     aiNotes = result.notes;
     $("ai-notes").textContent = result.notes;
     showAiStep("result");
@@ -507,6 +527,8 @@ $("ai-form").onsubmit = async (e) => {
   e.preventDefault();
   const kcal = Math.round(Number($("ai-kcal").value));
   if (!Number.isFinite(kcal) || kcal < 0) return aiError("Enter a valid calorie number.");
+  const protein = readProtein($("ai-protein"));
+  if (protein === undefined) return aiError("Enter a valid protein amount, or leave it blank.");
   // A small copy of the photo travels with the entry (and through sync); the full photo isn't kept.
   let thumb;
   try {
@@ -515,6 +537,7 @@ $("ai-form").onsubmit = async (e) => {
   await addEntry(currentDate, {
     name: $("ai-name").value.trim() || "Food",
     kcal,
+    protein,
     source: "ai",
     note: aiNotes,
     thumb,

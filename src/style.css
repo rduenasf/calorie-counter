@@ -82,6 +82,7 @@ button { touch-action: manipulation; }
 
 .total { font-size: 2.4rem; font-weight: 750; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .goal-total { font-weight: 500; color: var(--muted); }
+.protein-total { padding: 0 8px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .total small { font-size: 1rem; font-weight: 500; color: var(--muted); }
 #total { padding: 0 8px; border-radius: 12px; transition: background 0.2s, color 0.2s; }
 #total.near { background: var(--warn); color: var(--warn-text); }
@@ -162,7 +163,9 @@ main { max-width: 640px; margin: 0 auto; padding: 0 16px; }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .entry-time { flex: none; width: 3.2rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
-.entry-kcal { flex: none; font-size: 1.45rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.entry-side { flex: none; text-align: right; }
+.entry-kcal { font-size: 1.45rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.entry-protein { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .empty { text-align: center; color: var(--muted); padding: 32px 0; }
 
@@ -257,6 +260,8 @@ dialog.sheet[open] { animation: up 0.18s ease-out; }
 .kcal-edit { display: flex; align-items: center; gap: 10px; }
 .kcal-edit .field { font-size: 2rem; font-weight: 700; }
 .kcal-edit span { color: var(--muted); }
+.protein-edit { display: flex; align-items: center; gap: 10px; }
+.protein-edit span { flex: none; color: var(--muted); }
 
 .notes { margin: 0; color: var(--muted); font-size: 0.9rem; }
 .error { margin: 0; color: var(--danger); font-size: 0.9rem; }

@@ -1,5 +1,5 @@
 // Firestore sync. IndexedDB stays the app's source of truth; this module mirrors it to
-//   users/{uid}/entries/{id}   { date, name, kcal, source, note, thumb?, createdAt, updatedAt, deleted, syncedAt }
+//   users/{uid}/entries/{id}   { date, name, kcal, protein?, source, note, thumb?, createdAt, updatedAt, deleted, syncedAt }
 //   users/{uid}/days/{date}    { invalid, updatedAt, syncedAt }
 // Deleted entries stay as small tombstones ({ date, deleted: true, updatedAt }) so the
 // delete reaches devices that were offline. For each entry or day, the newer updatedAt wins.

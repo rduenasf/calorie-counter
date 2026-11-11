@@ -3,11 +3,11 @@ import { GoogleGenAI } from "@google/genai";
 const MODEL = "gemini-3.6-flash";
 const TIMEOUT_MS = 45000;
 
-const SYSTEM = `You estimate the calories of food for a personal calorie log.
+const SYSTEM = `You estimate the calories and protein of food for a personal calorie log.
 The user gives a short description, which may include a weight, and optionally a photo.
 Use the weight when given; otherwise infer a typical portion from the photo or description.
 Account for visible cooking oil, sauces, dressings and drinks.
-Give a single best-estimate number of kilocalories for everything described or shown, not a range.
+Give a single best-estimate number of kilocalories, and of grams of protein, for everything described or shown, not a range.
 Keep "name" short (a few words) and "notes" to one or two sentences explaining the main assumptions.`;
 
 const SCHEMA = {
@@ -15,9 +15,10 @@ const SCHEMA = {
   properties: {
     name: { type: "string", description: "Short name of the food or meal" },
     kcal: { type: "integer", description: "Best estimate of total kilocalories" },
+    protein: { type: "integer", description: "Best estimate of total grams of protein" },
     notes: { type: "string", description: "Brief explanation of the assumptions" },
   },
-  required: ["name", "kcal", "notes"],
+  required: ["name", "kcal", "protein", "notes"],
 };
 
 // Downscale the photo before sending: smaller upload, faster response, and the
@@ -110,5 +111,12 @@ export async function estimateCalories({ apiKey, description, imageBase64 }) {
   // The schema isn't strictly enforced, so check the fields before using them.
   const kcal = Number(result.kcal);
   if (!Number.isFinite(kcal)) throw new Error("The model didn't return a calorie number. Try again.");
-  return { name: String(result.name ?? ""), kcal: Math.round(kcal), notes: String(result.notes ?? "") };
+  // Protein is a bonus: a missing or odd value leaves the field blank rather than failing the estimate.
+  const protein = Number(result.protein);
+  return {
+    name: String(result.name ?? ""),
+    kcal: Math.round(kcal),
+    protein: result.protein != null && Number.isFinite(protein) && protein >= 0 ? Math.round(protein) : null,
+    notes: String(result.notes ?? ""),
+  };
 }

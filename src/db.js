@@ -1,5 +1,5 @@
 // Tiny IndexedDB wrapper. One record per day, keyed by local date "YYYY-MM-DD":
-// { date, invalid?: true, invalidAt?, entries: [{ id, name, kcal, source: "manual" | "ai", note, thumb?, createdAt, updatedAt }] }
+// { date, invalid?: true, invalidAt?, entries: [{ id, name, kcal, protein?, source: "manual" | "ai", note, thumb?, createdAt, updatedAt }] }
 // An invalid day keeps its entries but is left out of the weekly total and budget.
 // thumb is a small JPEG data URL of the AI photo. invalidAt and updatedAt let sync pick the newer side.
 //

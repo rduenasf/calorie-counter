@@ -24,6 +24,7 @@
 
     <section class="summary">
       <div class="total"><span id="total">0</span><span class="goal-total" id="goal-total"></span><small> kcal</small></div>
+      <div class="protein-total" id="protein-total" hidden></div>
       <div class="goal" id="goal-wrap" hidden>
         <div class="bar"><div class="fill" id="goal-fill"></div></div>
       </div>
@@ -54,6 +55,10 @@
         </div>
         <img id="calc-thumb" class="photo-preview" alt="" hidden />
         <input id="calc-name" class="field" placeholder="What did you eat?" autocomplete="off" />
+        <div class="protein-edit">
+          <input id="calc-protein" class="field" type="number" inputmode="decimal" min="0" step="any" placeholder="Optional" />
+          <span>g protein</span>
+        </div>
         <textarea id="calc-note" class="field" rows="3" placeholder="Notes" hidden></textarea>
         <div class="display">
           <div class="expr" id="calc-expr">&nbsp;</div>
@@ -92,7 +97,7 @@
     <dialog id="ai-sheet" class="sheet">
       <form method="dialog" class="sheet-body" id="ai-form">
         <div class="sheet-head">
-          <h2>Ask AI for calories</h2>
+          <h2>Ask AI for calories &amp; protein</h2>
           <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
         </div>
         <div id="ai-input">
@@ -115,6 +120,10 @@
           <div class="kcal-edit">
             <input id="ai-kcal" class="field" type="number" inputmode="numeric" min="0" />
             <span>kcal</span>
+          </div>
+          <div class="protein-edit">
+            <input id="ai-protein" class="field" type="number" inputmode="decimal" min="0" step="any" placeholder="Optional" />
+            <span>g protein</span>
           </div>
           <p class="notes" id="ai-notes"></p>
           <div class="row">
